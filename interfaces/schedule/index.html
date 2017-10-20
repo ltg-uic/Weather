@@ -1,0 +1,627 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- Your interface name here-->
+	<title></title>
+	<!-- The description of this interfaces here -->
+	<meta name="description" content="">
+	<!-- Your CSS here -->
+  	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+  	<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<script src="nutella_lib.js" type="text/javascript"></script>
+	<style>
+		a {
+			text-decoration: none;
+		}
+		body {
+	    	font-family: "Arial";
+		}
+		::-webkit-scrollbar {
+		    background-color: orange;
+		}
+		::-webkit-scrollbar-thumb {
+			background-color: black;
+		}
+		::-webkit-scrollbar-corner {
+			background-color: orange;
+		}
+/*		::-webkit-scrollbar-track {
+		    background-color: orange;
+		}
+*/	</style>
+
+	<script type="text/javascript">
+
+	// Parse the query parameters
+	var query_parameters = NUTELLA.parseURLParameters();
+
+	// Get an instance of nutella. 
+	var nutella = NUTELLA.init(query_parameters.broker, query_parameters.app_id, query_parameters.run_id, NUTELLA.parseComponentId());
+
+	nutella.net.subscribe("room_config_update", function(m){
+		location.reload(true);
+	});
+
+	var row = prepBlankRow();
+	var pick = -1;
+
+	nutella.net.publish( 'mode_update', {rq_mode : "schedule"} );
+
+
+    $(function() {
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		// redrawRoom();
+		// ctx.fillStyle = "white";
+  //   	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+
+
+//	build schedule primitives
+
+//   		var m = [];
+//   		for (var i=0; i<12; i++){
+//   			m[i]={val:1+1,text:months[i]};
+//   		};
+//   		var d = [];
+//   		for (var i=0; i<31; i++){
+//   			m[i]={val:i+1,text:"" + (i+1)};
+//   		};
+//   		var y = [];
+//   		for (var i=0; i<5; i++){
+//   			m[i]={val:i+2017,text:"" + (i+2017)};
+//   		};
+
+
+//   		var arr = [
+//   {val : 1, text: 'One'},
+//   {val : 2, text: 'Two'},
+//   {val : 3, text: 'Three'}
+// ];
+
+// var sel = $('<select>').appendTo('body');
+// $(arr).each(function() {
+//  sel.append($("<option>").attr('value',this.val).text(this.text));
+// });
+
+
+
+
+
+		nutella.net.request("room_configuration", undefined, function(response) {
+			nutella.net.request("quakes_schedule", '', function(qList) {
+
+			$( "tbody" ).sortable({
+		        update: function( ) {
+	        		$('.pick').css("background-color","silver");
+	        		$('.pick').css("color","black");
+	        		pick = -1;
+	        		redrawRoom();
+		        }
+	    	});  		
+
+
+				loadSchedule(qList.quakes_schedule);
+				// var nextRQindex = qList.length + 1;
+				// for (var i=qList.length-1; i>=0; i--){
+				// 	var d = new Date(qList[i].time).toUTCString();
+ 			// 		document.getElementById("history").value += 
+ 			// 			"RoomQuake " + (i+1) + '\n' +
+				// 		"Date: " + d + '\n' +
+				// 		"X: " + qList[i].location.x + "   Y: " + qList[i].location.y + '\n' +
+				// 		"Magnitude: " + qList[i].magnitude + '\n\n';
+				// 		// document.getElementById("history").value;
+				// };
+
+				// Update model
+				document.getElementById('maxRoomX').value = response.room_width_meters;
+				document.getElementById('maxRoomY').value = response.room_height_meters;
+				for (var i=0; i<response.seismographs.length; i++){ 
+					document.getElementById('x' + response.seismographs[i].id).value = response.seismographs[i].x;
+					document.getElementById('y' + response.seismographs[i].id).value = response.seismographs[i].y;
+				}
+				// seismographs = response.seismographs;
+				// mode = response.rq_mode;
+
+
+		        var Xarrow = new Image();
+		        Xarrow.src = 'Xarrow.png';
+
+		        // WAIT TILL IMAGE IS LOADED.
+		        Xarrow.onload = function () {
+		            redrawRoom();
+		        }
+
+		        var Yarrow = new Image();
+		        Yarrow.src = 'Yarrow.png';
+
+		        // WAIT TILL IMAGE IS LOADED.
+		        Yarrow.onload = function () {
+		            redrawRoom();
+		        }
+
+
+		        $("#instant").click(function(){
+		        	trigger();
+		        });
+
+		        $(".field").focus(function(){ 
+		        	var newpick = $(this).closest('tr').index();
+		        	if (newpick == pick) return;
+		        	$(this).siblings('button').trigger('click');
+		        	// redrawRoom();
+		        });
+
+		        $(".field").keyup(function(){ 
+		        	pick = $(this).closest('tr').index(); 
+		        	redrawRoom();
+		        });
+
+		        // $(".field").select(function(){ 
+		        // 	pick = $(this).closest('tr').index();			        	
+		        // 	redrawRoom();
+		        // });
+
+
+
+		        // $("#save").click(function(){
+		        // 	saveConfiguration();
+		        // });
+
+		        $("#save2").click(function(){
+		        	saveSchedule();
+		        });
+
+		       	$('a').click(function(){
+		        	var newpick = $(this).closest('tr').index();
+		        	if (newpick == pick) pick = -1;
+		        	this.closest('tr').remove();
+		        	redrawRoom();
+		        	// alert('hey');
+		        });
+
+
+
+		        $("#addBlankRow").click(function(){
+			        $("#schedule > tbody").append(row);
+
+			        $('a').unbind('click');
+			        $('.pick').unbind('click');
+			        $('.field').unbind('focus');
+			        $('.field').unbind('keyup');
+
+
+			        $('a').click(function(){
+			        	var newpick = $(this).closest('tr').index();
+			        	if (newpick == pick) pick = -1;
+			        	this.closest('tr').remove();
+			        	redrawRoom();
+			        	// alert('hey');
+			        });
+
+			        $('.pick').click(function(){
+		        		$('.pick').css("background-color","silver");
+		        		$('.pick').css("color","black");
+				        	// $('#schedule tbody tr:eq(' + pick + ') td:eq(2) button').css("background-color","gray");
+				        	// $('#schedule tbody tr:eq(' + pick + ') td:eq(2) button').css("color","white");
+			        	var newpick = $(this).closest('tr').index();
+			        	if (newpick == pick) {
+			        		pick = -1;
+			        	} else {
+				        	this.style.backgroundColor='black';
+				        	this.style.color='white';
+				        	pick = newpick;
+				        }
+			        	redrawRoom();
+			        });
+
+			        // $(".field").click(function(){ 
+			        // 	var newpick = $(this).closest('tr').index();
+			        // 	if (newpick == pick) return;
+		        	// 	$(this).siblings('button').trigger('click');
+			        // 	// redrawRoom();
+			        // });
+
+			        $(".field").focus(function(){ 
+			        	var newpick = $(this).closest('tr').index();
+			        	if (newpick == pick) return;
+			        	$(this).siblings('button').trigger('click');
+			        	// redrawRoom();
+			        });
+
+
+			        // $(".field").focus(function(){ 
+			        // 	pick = $(this).closest('tr').index();			        	
+			        // 	redrawRoom();
+			        // });
+
+			        $(".field").keyup(function(){ 
+			        	pick = $(this).closest('tr').index();			        	
+			        	redrawRoom();
+			        });
+
+
+		        });
+
+		        $('.pick').click(function(){
+	        		$('.pick').css("background-color","silver");
+	        		$('.pick').css("color","black");
+			        	// $('#schedule tbody tr:eq(' + pick + ') td:eq(2) button').css("background-color","gray");
+			        	// $('#schedule tbody tr:eq(' + pick + ') td:eq(2) button').css("color","white");
+		        	var newpick = $(this).closest('tr').index(); 
+		        	if (newpick == pick) {
+		        		pick = -1;
+		        	} else {
+			        	this.style.backgroundColor='black'; 
+			        	this.style.color='white';
+			        	pick = newpick;
+			        }
+		        	redrawRoom();
+		        });
+
+
+		  //       $('#clear_demo_quakes').click(function() {
+				// 	// Send message and reload
+				// 	nutella.net.publish("demo_quakes_clean", {});
+				// 	location.reload();
+				// 	return false;
+				// });
+
+				canvas.addEventListener("mousedown",epicenter,false);
+
+		        function epicenter(event){
+		        	if (pick == -1) return;
+		        	var rect = canvas.getBoundingClientRect(); 
+		        	var pendingX = event.clientX-rect.left;
+		        	var pendingY = event.clientY-rect.top;
+		        	var cX = pendingX/ctx.canvas.width * document.getElementById("maxRoomX").value;
+		        	if (cX > document.getElementById("maxRoomX").value)
+		        		cX = document.getElementById("maxRoomX").value;
+		        	if (cX < 0) cX = 0;
+		        	// var cY = document.getElementById("maxRoomY").value - (pendingY/ctx.canvas.height) * document.getElementById("maxRoomY").value;
+		        	var cY = document.getElementById("maxRoomY").value * (1 - pendingY/ctx.canvas.height);
+		        	if (cY > document.getElementById("maxRoomY").value)
+		        		cY = document.getElementById("maxRoomY").value;
+		        	if (cY < 0) cY = 0;
+		        	// document.getElementById("instantX").value = parseInt(cX*1000)/1000;
+		        	// document.getElementById("instantY").value = parseInt(cY*1000)/1000;
+		        	// document.getElementById("instantX").value = parseInt(cX*1000)/1000;
+		        	// document.getElementById("instantY").value = parseInt(cY*1000)/1000;
+
+					$('#schedule tbody tr:eq(' + pick + ') td:eq(2) input:eq(0)').val(parseInt(cX*1000)/1000);
+
+					$('#schedule tbody tr:eq(' + pick + ') td:eq(2) input:eq(1)').val(parseInt(cY*1000)/1000);
+
+
+		        	// document.getElementById('instantX').value = 
+		        	redrawRoom();
+		        };
+
+
+
+		        function saveConfiguration(){
+					var m = {}
+					m.room_width_meters = Number(document.getElementById("maxRoomX").value);
+					m.room_height_meters = Number(document.getElementById("maxRoomY").value);
+					m.seismographs = [];
+					for (var i=0; i<5; i++) {
+		    			var sX = Number(document.getElementById("x" + (i+1)).value);
+		    			var sY = Number(document.getElementById("y" + (i+1)).value);
+		    			if (sX <= 0 || sY <= 0) continue;
+						m.seismographs.push( {id:i+1,x:sX,y:sY});
+					}
+					m.rq_mode = "demo";
+					nutella.net.publish("room_config_update", m);
+
+		        }
+
+
+
+		        function redrawRoom(){ 
+		        	var seismoSymbols = ["①","②","③","④","⑤"];
+		        	var maxX = Number(document.getElementById("maxRoomX").value);
+		        	var maxY = Number(document.getElementById("maxRoomY").value);
+		        	if (maxX <= 0 || maxY <= 0) return;
+		        	if (maxX >= maxY) {
+		        		ctx.canvas.width = 500;
+		        		ctx.canvas.height = Math.floor(500 * (maxY / maxX));
+		        	} else {
+		        		ctx.canvas.height = 500;
+		        		ctx.canvas.width = Math.floor(500 * (maxX / maxY));
+		        	}
+		        	ctx.fillStyle = "white";
+		    		ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+		    		// var Xarrow=document.getElementById("Xarrow");
+		    		ctx.drawImage(Xarrow,50,ctx.canvas.height-40);
+		    		ctx.drawImage(Yarrow,10,ctx.canvas.height-160);
+		    		ctx.fillStyle = "orange";
+		    		ctx.font = "30px Arial";
+		    		for (var i=0; i<5; i++){
+		    			var sX = Number(document.getElementById("x" + (i+1)).value);
+		    			var sY = Number(document.getElementById("y" + (i+1)).value);
+		    			if (sX <= 0 || sY <= 0) continue;
+		    			ctx.fillText(seismoSymbols[i],sX/maxX*ctx.canvas.width-15,ctx.canvas.height-(sY/maxY*ctx.canvas.height-11));
+		    		};
+					// if (document.getElementById("instantX").value > 0 && document.getElementById("instantY").value > 0) {
+					// 	var x = document.getElementById("instantX").value/document.getElementById("maxRoomX").value * ctx.canvas.width;
+					// 	var y = ctx.canvas.height - document.getElementById("instantY").value/document.getElementById("maxRoomY").value * ctx.canvas.height;
+					// 	ctx.fillText("💥",x-15,y+12);
+					// }
+
+					// alert($('#schedule tbody tr').length);
+					ctx.fillStyle = "brown";
+					for (var i=0; i<$('#schedule tbody tr').length; i++) {
+
+						var ex = $('#schedule tbody tr:eq(' + i + ') td:eq(2) input:eq(0)').val();
+
+						var ey = $('#schedule tbody tr:eq(' + i + ') td:eq(2) input:eq(1)').val();
+
+						var x = ex/document.getElementById("maxRoomX").value * ctx.canvas.width;
+						var y = ctx.canvas.height - ey/document.getElementById("maxRoomY").value * ctx.canvas.height;
+						if (i == pick) ctx.fillText("💥",x-15,y+12);
+						else ctx.fillText("・",x-15,y+12);						
+					}
+
+
+					// if (pick != -1) {
+
+					// 	var ex = $('#schedule tbody tr:eq(' + pick + ') td:eq(2) input:eq(0)').val();
+
+					// 	var ey = $('#schedule tbody tr:eq(' + pick + ') td:eq(2) input:eq(1)').val();
+
+					// 	var x = ex/document.getElementById("maxRoomX").value * ctx.canvas.width;
+					// 	var y = ctx.canvas.height - ey/document.getElementById("maxRoomY").value * ctx.canvas.height;
+					// 	ctx.fillText("💥",x-15,y+12);
+					// }
+		        }
+
+		        function trigger() {
+					// Gather data
+					var mq = {};
+					mq.magnitude = document.getElementById("magnitude").selectedIndex+2;
+					mq.location = {};
+					mq.demo = true;
+					mq.location.x = Number(document.getElementById("instantX").value);
+					mq.location.y = Number(document.getElementById("instantY").value);
+					mq.time = new Date().toUTCString();
+					// mq.id = "d" + (quakes.length + 1);
+					// Update model
+					// quakes.push(mq);
+					// // Update table view
+					// updateQuakesTableView('demo_quakes_table', true);
+					// Ship to backend
+					nutella.net.publish("new_demo_quake", mq);
+					document.getElementById("history").value = 
+						"RoomQuake " + nextRQindex++ + '\n' +
+						"Date: " + mq.time + '\n' +
+						"X: " + mq.location.x + "   Y: " + mq.location.y + '\n' +
+						"Magnitude: " + mq.magnitude + '\n\n' +
+						document.getElementById("history").value;
+					// Hide mouse quake dot
+					// demo_p.manualQuakeX = -100;
+					// demo_p.manualQuakeY = -100;
+				}
+
+
+
+				function saveSchedule(){
+					var lastDate = 0;
+					var quakes = [];
+					// for( var i=0; i<$('#schedule tr').length; i++){
+					for( var i=0; i<$('#schedule tbody tr').length; i++){
+						var m = $('#schedule tbody tr:eq(' + i + ') td:eq(0) select:eq(0) option:selected').val();
+						if (m<10) m = "0" + m;
+						var d = $('#schedule tbody tr:eq(' + i + ') td:eq(0) select:eq(1) option:selected').val();
+						if (d<10) d = "0" + d;
+						var y = $('#schedule tbody tr:eq(' + i + ') td:eq(0) select:eq(2) option:selected').val();
+						var h = $('#schedule tbody tr:eq(' + i + ') td:eq(1) select:eq(0) option:selected').text();
+						var n = $('#schedule tbody tr:eq(' + i + ') td:eq(1) select:eq(1) option:selected').text();
+						var s = $('#schedule tbody tr:eq(' + i + ') td:eq(1) select:eq(2) option:selected').text();
+						
+						var time = y + "-" + m + "-" + d + "T" + h + ":" + n + ":" +  s + ".000Z";
+
+						var newDate = new Date(time);
+						var result = newDate.getTime();
+						if (result < lastDate){
+							alert ("Please sort your schedule in the proper time sequence.");
+							return;
+						}
+						lastDate = result;
+
+						var mag = $('#schedule tbody tr:eq(' + i + ') td:eq(3) select:eq(0) option:selected').val();
+
+						var ex = $('#schedule tbody tr:eq(' + i + ') td:eq(2) input:eq(0)').val()
+						var ey = $('#schedule tbody tr:eq(' + i + ') td:eq(2) input:eq(1)').val()
+
+						var loc = {x:Number(ex),y:Number(ey)};
+
+						quakes[i] = {magnitude: Number(mag),location:loc,time:time,demo:"false",id:i+1};
+					}
+					nutella.net.publish('quakes_schedule_update', { quakes_schedule : quakes } );
+					nutella.net.publish( 'mode_update', {rq_mode : "schedule"} );
+
+				};
+
+
+				function loadSchedule(quakes){
+
+
+					// for( var i=0; i<$('#schedule tr').length; i++){
+					for( var i=0; i<quakes.length; i++){
+						$("#schedule > tbody").append(row);
+
+						//decode date string
+
+						m = Number(quakes[i].time.substring(5,7)); 
+						$('#schedule tbody tr:eq(' + i + ') td:eq(0) select:eq(0)').val(m);
+
+						d = Number(quakes[i].time.substring(8,10)); 
+						$('#schedule tbody tr:eq(' + i + ') td:eq(0) select:eq(1)').val(d);
+
+						y = Number(quakes[i].time.substring(0,4)); 
+						$('#schedule tbody tr:eq(' + i + ') td:eq(0) select:eq(2)').val(y);
+
+						h = Number(quakes[i].time.substring(11,13)); 
+						$('#schedule tbody tr:eq(' + i + ') td:eq(1) select:eq(0)').val(h);
+
+						n = Number(quakes[i].time.substring(14,16)); 
+						$('#schedule tbody tr:eq(' + i + ') td:eq(1) select:eq(1)').val(n);
+
+						s = Number(quakes[i].time.substring(17,19)); 
+						$('#schedule tbody tr:eq(' + i + ') td:eq(1) select:eq(2)').val(s);
+
+						$('#schedule tbody tr:eq(' + i + ') td:eq(2) input:eq(0)').val(quakes[i].location.x);
+
+						$('#schedule tbody tr:eq(' + i + ') td:eq(2) input:eq(1)').val(quakes[i].location.y);
+
+						g = quakes[i].magnitude; 
+						$('#schedule tbody tr:eq(' + i + ') td:eq(3) select:eq(0)').val(g);
+					}
+				};
+
+				
+			});
+	    });
+	});
+
+	function prepBlankRow(){
+   		var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  		var m = '<select>';
+  		for (var i=0; i<12; i++){
+  			m += '<option value=' + (i+1) + '>' + months[i] + '</option>';
+  		};
+  		m += '</select>';
+
+  		var d = '<select>';
+  		for (var i=0; i<31; i++){
+  			d += '<option value=' + (i+1) + '>' + (i+1) + '</option>';
+  		};
+  		d += '</select>';
+
+  		var y = '<select>';
+  		for (var i=0; i<5; i++){
+  			y += '<option value=' + (i+2017) + '>' + (i+2017) + '</option>';
+  		};
+  		y += '</select>';
+
+  		var h = '<select>';
+  		for (var i=0; i<24; i++){
+  			var t = (i>9) ? i : ("0" + i);
+  			h += '<option value=' + i + '>' + t + '</option>';
+  		};
+  		h += '</select>';
+
+  		var n = '<select>';
+  		for (var i=0; i<60; i++){
+  			var t = (i>9) ? i : ("0" + i);
+  			n += '<option value=' + i + '>' + t + '</option>';
+  		};
+  		n += '</select>';
+
+  		var s = '<select>';
+  		for (var i=0; i<60; i++){
+  			var t = (i>9) ? i : ("0" + i);
+  			s += '<option value=' + i + '>' + t + '</option>';
+  		};
+  		s += '</select>';
+
+  		var e = 'X <input class="field" type=text size=6 maxlength=6>Y <input class="field" type=text size=6 maxlength=6>' +
+  			'<button class="pick">pick</button>';
+
+  		var g = '<select>';
+  		for (var i=2; i<6; i++){
+  			g += '<option value=' + i + '>' + i + '</option>';
+  		};
+  		g += '</select>';
+
+  		return( '<tr>' + 
+  			'<td>' + m + d + y + '</td>' +
+  			'<td>' + h + n + s + '</td>' + 
+  			'<td>' + e + '</td>' +   			
+  			'<td>' + g + '</td>' +
+  			'<td><a href="#">✂️</a></td>' +  			
+  			'</tr>');
+	}
+
+    </script>
+
+</head>
+<body>
+
+	<table >
+		<tr>
+			<td>
+<!-- 			 	<input type="radio" name="system" value="English"> English<br>
+  					<input type="radio" name="system" value="Metric"> Metric
+ -->		</td>
+			<td  align=center>
+				<input readonly id="maxRoomX"  type=text size=6 maxlength=6 value=10>
+			</td>
+			<td align=center valign=top rowspan=3>
+				<b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspDate&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspTime&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspEpicenter&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspMag&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</b>
+			  <div style="overflow:scroll; height: 500px; font-size:50%;">
+				<table id="schedule">
+<!-- 				    <thead>
+				      <tr class="ui-state-default">
+				        <th>Date</th>
+				        <th>Time</th>
+				        <th>Epicenter</th>
+				        <th>Mag</th>
+				      </tr>
+				    </thead>
+ -->				<tbody id="schedule_tbody">
+				    </tbody>
+				</table>
+			  </div>
+			  <button id="addBlankRow" >Add event</button><button id="save2">Save schedule</button>
+
+<!-- 				<b>Instant quake</b><br><br>
+				Epicenter:
+				X: <input class="field" id="instantX" type=text size=6 maxlength=6>
+				Y: <input class="field" id="instantY" type=text size=6 maxlength=6>
+				
+				Magnitude
+				<select id="magnitude">
+				  <option value="2">2</option>
+				  <option value="3">3</option>
+				  <option value="4">4</option>
+				  <option value="5">5</option>
+				</select><br><br>
+				<button id="instant">Generate quake</button><br><br>
+				Event History<br>
+				<textarea id="history" rows=14 cols=40></textarea>
+				<br><br><br>
+				<button id="clear_demo_quakes">Clear demo quakes</button>
+ -->
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<input readonly id="maxRoomY" class="field" type=text size=6 maxlength=6 value=10 style="transform:rotate(270deg);">
+			</td>
+			<td>
+				<canvas id="myCanvas" width="500" height="500" style="border:1px solid black;">
+					Your browser does not support the canvas element.
+				</canvas>
+			</td>
+		</tr>
+		<tr>
+			<td>
+			</td>
+			<td  align=center>
+				Seismograph 1: X <input readonly  id="x1" size=6 maxlength=6 type=text> Y <input readonly class="field" id="y1" size=6 maxlength=6 type=text><br>
+				Seismograph 2: X <input readonly  id="x2" size=6 maxlength=6 type=text> Y <input readonly class="field" id="y2" size=6 maxlength=6 type=text><br>
+				Seismograph 3: X <input readonly  id="x3" size=6 maxlength=6 type=text> Y <input readonly class="field" id="y3" size=6 maxlength=6 type=text><br>
+				Seismograph 4: X <input readonly  id="x4" size=6 maxlength=6 type=text> Y <input readonly class="field" id="y4" size=6 maxlength=6 type=text><br>
+				Seismograph 5: X <input readonly  id="x5" size=6 maxlength=6 type=text> Y <input readonly  class="field" id="y5" size=6 maxlength=6 type=text><br><br>
+				<button hidden id="save">Save configuration</button>
+			</td>
+		</tr>
+	</table>
+
+	
+</body>
+</html>

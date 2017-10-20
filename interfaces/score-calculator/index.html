@@ -1,0 +1,82 @@
+<html>
+<head>
+<title>Score calculator</title>
+<meta name="description" content="Calculate how well you did figuring out the last quake">
+</head>
+<body>
+<H1> Official BZAEDS RoomQuake scorer </H1>
+<H2> Each time you start with 7 points </H2>
+
+Scoring system:
+<br><br>
+-1 point for every 1/2 meter difference in X and Y<br>
+-1 point for every 1 seconds difference<br>
+-1 point for every 1 step magnitude difference<br>
+<br><br>
+
+<form name=myform>
+<table>
+<th><td>Estimated</td><td>Actual</td><td>Penalty</td></th>
+<tr>
+<td>Distance from Wall 2 (X coordinate) </td>
+<td><input type=text name=eD1></td>
+<td><input type=text name=aD1></td>
+<td><input type=text name=diffD1></td>
+</tr>
+<tr>
+<td>Distance from Wall 1 (Y coordinate)</td>
+<td><input type=text name=eD2></td>
+<td><input type=text name=aD2></td>
+<td><input type=text name=diffD2></td>
+</tr>
+<tr>
+<td>Time (just seconds)</td>
+<td><input type=text name=eT></td>
+<td><input type=text name=aT></td>
+<td><input type=text name=diffT></td>
+</tr>
+<tr>
+<td>Magnitude</td>
+<td><input type=text name=eM></td>
+<td><input type=text name=aM></td>
+<td><input type=text name=diffM></td>
+</tr>
+<td>&nbsp</td>
+<td></td>
+<td></td>
+<td>&nbsp+7</td>
+</tr>
+
+<tr>
+<td><b>Points Awarded:</b></td>
+<td></td>
+<td></td>
+<td><input type=text name=T></td>
+</tr>
+</table>
+<br><br>
+<input type=button value=Calculate onClick="
+
+document.myform.diffD1.value = '-'+Math.floor(2*Math.abs(document.myform.eD1.value-document.myform.aD1.value));
+
+document.myform.diffD2.value = '-'+Math.floor(2*Math.abs(document.myform.eD2.value-document.myform.aD2.value));
+
+var actual = document.myform.aT.value;
+var estimate = document.myform.eT.value;
+var diff = Math.abs(actual-estimate);
+if (diff > 10) diff = 60-diff;
+document.myform.diffT.value = '-'+diff;
+
+document.myform.diffM.value = '-'+Math.floor(Math.abs(document.myform.eM.value-document.myform.aM.value));
+
+var total = 7 + parseInt(document.myform.diffD1.value) + parseInt(document.myform.diffD2.value) + parseInt(document.myform.diffT.value) + parseInt(document.myform.diffM.value);
+if (total < 0) total = 0;
+document.myform.T.value = total;
+
+
+">
+<input type="reset" value="Clear">
+
+</form>
+</body>
+</html>

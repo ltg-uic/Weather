@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
+  <script src="nutella_lib.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.9.2/themes/cupertino/jquery-ui.css" />
+ 
+  <style type="text/css">
+
+    .inactiveLink {
+       pointer-events: none;
+       cursor: default;
+    }
+
+    body {
+    	background: orange;
+    }
+
+    td {
+      width:200px;
+    }
+
+
+    li {
+      font: 200 20px/1.5 Helvetica, Verdana, sans-serif;
+      border-bottom: 1px solid #ccc;
+      padding:5px 5px 5px 5px;
+      background-color:white;
+      list-style-type: none;
+    }
+    ul {
+       background-color:white;
+   }
+/*    li:last-child {
+      border: none;
+    }
+*/
+    li  a {
+      text-decoration: none;
+      color: white;
+
+      -webkit-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -moz-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -o-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -ms-transition: font-size 0.3s ease, background-color 0.3s ease;
+      transition: font-size 0.3s ease, background-color 0.3s ease;
+      /*display: block;*/
+    }
+
+    #mydiv {
+      text-align: center;
+
+    }
+
+    .ui-dialog-titlebar-close {
+    visibility: hidden;
+	}	
+
+    button {
+      font-size: 20px;
+    }
+
+    li  a:hover {
+      font-size: 25px;
+      /*background: white;*/
+    }
+
+    #resources {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #instances {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #resources .sort-handle {
+      display: none;
+    }
+ 
+    #resources .ui-selected .sort-handle
+     {
+      display: inline;
+      padding: 0 0.5em;
+      cursor: pointer;
+    }
+
+    #activities {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #activities .sort-handle {
+      display: none;
+    }
+ 
+    #activities .ui-selected .sort-handle
+     {
+      display: none;
+    }
+
+    #resources {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+
+    #resources li a
+    {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+
+    #resources li a.toggleList {
+      font-weight: bold;
+    }
+ 
+    #resources .sort-handle {
+      display: none;
+    }
+ 
+    #resources .ui-selected
+     {
+      font-weight: bold;
+/*      display: inline;
+      padding: 0 0.5em;
+      cursor: pointer;
+*/    }
+
+    .header {
+      font-size:25px; 
+      font-family:Helvetica;
+    }
+
+    li a.ui-selected {
+      background-color: white;
+      color: black;
+      font-weight: bold;
+      background-image: none;
+    }
+
+    li.ui-selected {
+      background-color: white;
+      color: black;
+      font-weight: bold;
+      background-image: none;
+    }
+    li.ui-selecting {
+      background-color: white;
+      color: red;
+      background-image: none;
+    }
+ 
+  </style>
+  <script>
+    var query_parameters = NUTELLA.parseURLParameters();
+    var nutella = NUTELLA.init(query_parameters.broker, query_parameters.app_id, query_parameters.run_id, NUTELLA.parseComponentId());
+
+    var tentativeResourceID = -1;
+    var tentativeResourceName;
+    var resource, link;
+
+    $(function() {
+
+    	// build the resources menu
+    	function build_resources_list() {
+    		$('#resources').empty();
+	    	for (var i=0; i<top.resources.resourceList.length; i++) {
+	    		var item = top.resources.resourceList[i];
+	    		if (item.ID > 300) { //first 8 resources are undeletable
+		    	    var li = '<li class="ui-widget-content" value=' + item.ID + ' name="' + item.name + '"><a href="#">' + item.name + '</a></li>';
+				    $('#resources').append(li);
+				}
+	    	}
+	    }
+
+	    build_resources_list();
+
+    	// if a resource is selected, highlight it
+
+  		$( "#resources li a" ).on( "click", function( event, ui ) { 
+  			$( "#resources li" ).removeClass('ui-selected'); 
+  			$( "#resources li a" ).removeClass('ui-selected');
+  			var p = event.currentTarget;
+  			tentativeResourceName = p.innerHTML;
+  			p = $(p);
+  			p.addClass('ui-selected');
+  			tentativeResourceID = p.parent()[0].value;
+  			resource = top.resources.resourceList.filter(function(item) {return(item.ID == tentativeResourceID);})[0];
+			// document.getElementById('resourceName').value = resource.name;
+            document.getElementById('link').value = resource.link;
+            document.getElementById('description').value = resource.description;
+            document.getElementById('query').value = resource.query;
+            var URL;
+		    if ((resource.link != '') && (resource.link.substring(0,4) != "http")) { 
+		        var s = 'http://';
+		        s += window.location.host + '/';
+		        s += query_parameters.app_id + '/';
+		        s += query_parameters.run_id + '/';
+		        s += 'runs/';
+		        s += resource.link + '/';
+		        s += 'index.html' + '?';
+		        s += 'broker=' + query_parameters.broker + '&';
+		        s += 'app_id=' + query_parameters.app_id + '&';
+		        s += 'run_id=' + query_parameters.run_id ;
+		        URL = s; 
+		    }
+
+            document.getElementById('photo').src = URL + resource.query;
+            $('#unfold').show();
+
+        });
+
+    	$('#delete').on("click", function (event, ui){
+    		for (var i=0; i<top.resources.resourceList.length; i++)
+    			if (top.resources.resourceList[i].ID == tentativeResourceID){
+    				top.resources.resourceList.splice(i,1);
+    				top.update_resources();
+    				for (var j=1; j<top.design.data.length; j++){
+    					if (top.design.data[i].resourceID == tentativeResourceID)
+    						top.design.data.splice(j,1);
+    				}
+    				tentativeResourceID = -1;
+    				top.update_resources();
+    				top.update_design();
+    				return;
+    			}
+    		alert ('You must select a resource first, then click Delete')
+    	});
+
+    	$("#renameDialog").dialog({
+    		autoOpen : false, modal : true, show : "blind", hide : "blind"
+  		});
+
+    	$('#rename').on("click", function (event, ui){
+    		if (tentativeResourceID == -1) {
+    			alert ('You must select a resource first, then click Rename');
+    			return;
+    		}
+    		for(var i=0; i<top.resources.resourceList.length; i++){
+    			if (top.resources.resourceList[i].ID == tentativeResourceID){
+		    		document.getElementById('revisedname').value = top.resources.resourceList[i].name;
+		    		document.getElementById('link2').value = top.resources.resourceList[i].link;
+		    		document.getElementById('query2').value = top.resources.resourceList[i].query;
+		    		document.getElementById('description2').value = top.resources.resourceList[i].description;
+       				$("#renameDialog").dialog("open");
+       			}
+    		}
+    	});
+
+    	$('#cancelRename').on("click", function(){
+    		document.getElementById('revisedname').value = '';
+    		$("#renameDialog").dialog("close");
+    	})
+
+    	$('#saveRename').on("click", function(){
+    		$("#renameDialog").dialog("close");
+    		for (var i=0; i<top.resources.resourceList.length; i++)
+    			if (top.resources.resourceList[i].ID == tentativeResourceID){
+    				top.resources.resourceList[i].name = document.getElementById('revisedname').value;
+    				top.resources.resourceList[i].link = document.getElementById('link2').value;
+    				top.resources.resourceList[i].query = document.getElementById('query2').value;
+    				top.resources.resourceList[i].description = document.getElementById('description2').value;
+    				tentativeResourceID = -1;
+    				top.update_resources();
+    				return;
+    			};
+    	});
+
+
+
+// {"topID":8,"resourceList":[{"ID":1,"name":"portals","description":"portals","link":"portals","query":""},{"ID":2,"name":"resources","description":"resources","link":"resources","query":""},{"ID":3,"name":"activities","description":"activities","link":"activities","query":""},{"ID":4,"name":"design","description":"design","link":"design","query":""},{"ID":5,"name":"instances","description":"instances","link":"instances","query":""},{"ID":6,"name":"unitname","description":"unitname","link":"unitname","query":""},{"ID":7,"name":"portal","description":"portal","link":"portal","query":""},{"ID":8,"name":"activity","description":"activity","link":"activity","query":""}]}
+
+    	$("#newDialog").dialog({
+    		autoOpen : false, modal : true, show : "blind", hide : "blind"
+  		});
+
+    	$('#new').on("click", function (event, ui){
+    		document.getElementById('newname').value = "New resource";
+
+    		$("#newDialog").dialog("open");
+    		document.getElementById('newname').select();
+
+    		// return false;
+    	});
+
+    	$('#cancelNew').on("click", function(){
+    		document.getElementById('newname').value = '';
+    		$("#newDialog").dialog("close");
+    	})
+
+    	$('#saveNew').on("click", function(){
+    		$("#newDialog").dialog("close");
+    		top.resources.topID++;
+    		top.resources.resourceList.push({ID:top.resources.topID,name:document.getElementById('newname').value,link:document.getElementById('link').value, query:document.getElementById('query').value,description:document.getElementById('description').value});
+    		top.update_resources();
+     	});
+
+	});
+
+</script>
+
+</head>
+<body>
+  <table>
+    <tr>
+      <td valign=top align=middle>
+        <span class="header"  id="open">resource</span><br>
+        <ul id="resources" class="list"></ul>
+        <button id="new">New resource</button><br>
+        <button id="delete">Delete resource</button><br>
+        <button id="rename">Edit resource</button><br>
+      </td>
+
+      <td hidden id="unfold" valign=top align=center style="width:500px;">
+        <span class="header" style="" id="open2">properties</span><br><br>
+        <iframe id="photo" height=300 width=400> </iframe>
+      </td>
+
+
+   </tr>
+  </table>
+<div id="renameDialog" title="Rename the resource">
+          <table style="font-family: Helvetica; font-size: 125%;" align=center>
+          <tr>
+            <td style="width:20%;" class='short' align=right> name </td>
+            <td class='short' align=left>  <input id="revisedname" type=text style="width:339px;"></td>
+          </tr>
+          <tr>
+            <td style="width:20%;" class='short' align=right> link </td>
+            <td class='short' align=left>  <input id="link2" type=text style="width:339px;"></td>
+          </tr>
+          <tr>
+            <td class='short' align=right> query </td>
+            <td class='short' align=left>  <input id="query2" type=text style="width:339px;"></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td class='short' align=left> description </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td class='short' align=left>  <textarea id="description2" style="width:339px; height:120px"></textarea></td>
+          </tr>
+        </table>
+  <button id="cancelRename">Cancel</button>
+  <button id="saveRename">Save</button>
+</div>
+<div id="newDialog" title="New resource">
+          <table style="font-family: Helvetica; font-size: 125%;" align=center>
+          <tr>
+            <td style="width:20%;" class='short' align=right> name </td>
+            <td class='short' align=left>  <input id="newname" type=text style="width:339px;"></td>
+          </tr>
+          <tr>
+            <td style="width:20%;" class='short' align=right> link </td>
+            <td class='short' align=left>  <input id="link" type=text style="width:339px;"></td>
+          </tr>
+          <tr>
+            <td class='short' align=right> query </td>
+            <td class='short' align=left>  <input id="query" type=text style="width:339px;"></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td class='short' align=left> description </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td class='short' align=left>  <textarea id="description" style="width:339px; height:120px"></textarea></td>
+          </tr>
+        </table>
+  <button id="cancelNew">Cancel</button>
+  <button id="saveNew">Save</button>
+</div>
+</body>
+</html>

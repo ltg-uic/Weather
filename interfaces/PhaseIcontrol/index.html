@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- Your interface name here-->
+	<title></title>
+	<!-- The description of this interfaces here -->
+	<meta name="description" content="">
+	<!-- Your CSS here -->
+  	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+  	<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+	<script src="nutella_lib.js" type="text/javascript"></script>
+	<style>
+		body {
+	    	font-family: "Arial";
+		}
+	</style>
+
+	<script type="text/javascript">
+
+	// Parse the query parameters
+	var query_parameters = NUTELLA.parseURLParameters();
+
+	// Get an instance of nutella. 
+	var nutella = NUTELLA.init(query_parameters.broker, query_parameters.app_id, query_parameters.run_id, NUTELLA.parseComponentId());
+
+	var room = [[]];
+	var maxX;
+	var maxY;
+	var unitX;
+	var unitY;
+
+    $(function() {
+		var canvas = document.getElementById("floor"); 
+		var ctx = canvas.getContext("2d"); 
+		nutella.net.request("get_config", undefined, function(response) {
+
+
+
+// Make sure the image is loaded first otherwise nothing will draw.
+			 maxX = response.X_max;
+			 maxY = response.Y_max;
+			 unitX = ctx.canvas.width/(maxX+1);
+	    	 unitY = ctx.canvas.height/(maxY+1); 
+			var indexX = 0;
+			var indexY = 0;
+			var cities = response.cities; 
+
+			redrawRoom();
+			// canvas.addEventListener("mousedown",pick_cell,false);
+		// redrawRoom();
+		// ctx.fillStyle = "white";
+  //   	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+
+		nutella.net.subscribe('weather_update',function(map){
+			room=map;
+			redrawRoom();
+		});
+
+		nutella.net.subscribe('clock',function(time){
+			var mins = time.m;
+			if (mins < 10) mins = '0' + mins;
+			var t = time.h + ":" + mins;
+			$('#clocktime').html(t);
+		});
+	        // $(".field").keyup(function(){ 
+	        // 	redrawRoom();
+	        // });
+
+	        // $(".field").mouseout(function(){ 
+	        // 	redrawRoom();
+	        // });
+
+	        // $("#save").click(function(){
+	        // 	saveConfiguration();
+	        // })
+
+
+
+        function redrawRoom(){ 
+        	var alphabet = ['','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'];
+        	if (maxX <= 0 || maxY <= 0) return;
+        	if (maxX >= maxY) {
+        		ctx.canvas.width = 500;
+        		ctx.canvas.height = Math.floor(500 * (maxY / maxX));
+        	} else {
+        		ctx.canvas.height = 500;
+        		ctx.canvas.width = Math.floor(500 * (maxX / maxY));
+        	}
+        	ctx.fillStyle = "white";
+    		// ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+
+    		// draw grid
+
+
+
+    		for (var i=1; i<=maxX+1; i++){
+				ctx.strokeStyle = 'black';
+				ctx.beginPath();
+				ctx.moveTo(i*unitX,unitY);
+				ctx.lineTo(i*unitX,ctx.canvas.height);
+				ctx.stroke();
+			}
+
+    		for (var i=1; i<=maxY+1; i++){
+				ctx.strokeStyle = 'black';
+				ctx.beginPath();
+				ctx.moveTo(unitX,i*unitY);
+				ctx.lineTo(ctx.canvas.width,i*unitY);
+				ctx.stroke();
+			}
+
+			// draw axis labels
+			ctx.font="30px Arial";
+			ctx.fillStyle = 'black';
+
+			for (var i=1; i<=maxY; i++){
+				ctx.fillText(i,30,i*unitY + unitY/2 + 8);
+
+			}
+
+			for (var i=1; i<=maxX; i++){
+				ctx.fillText(alphabet[i],i*unitX + unitX/2 + 5-14,50);
+
+			}
+
+			for (var i=0; i<room.length; i++)
+				for (var j=0; j<room[i].length; j++) {
+					ctx.strokeStyle = 'black';
+					if (room[i][j].t < 15) ctx.fillStyle = 'LightBlue';
+					else if (room[i][j].t < 25) ctx.fillStyle = 'Cornsilk';
+					else ctx.fillStyle = 'Tomato';							
+					ctx.beginPath();
+					ctx.moveTo((i+1) * unitX+1, (j+1) * unitY+1);
+					ctx.lineTo((i+2) * unitX-1, (j+1) * unitY+1);
+					ctx.lineTo((i+2) * unitX-1, (j+2) * unitY-1);
+					ctx.lineTo((i+1) * unitX+1, (j+2) * unitY-1);
+					ctx.fill();
+					if (room[i][j].p == 'rain') {
+						ctx.font="30px Arial";
+						ctx.fillStyle = 'black'; 
+						ctx.fillText('🌧',(i+1) * unitX + unitX/4, (j+1) * unitY + 3*unitY/4);
+					}
+					
+				}; 
+
+			for (var i=0; i<cities.length; i++) {
+    			var x = cities[i].x * unitX + unitX/2 - 15;
+    			var y = cities[i].y * unitY + unitY/2 + 10;
+    			ctx.fillStyle = 'black';
+    			ctx.textAlign="left";
+				ctx.font="40px Arial";
+				ctx.fillText('⦿',x,y);
+				ctx.font="30px Arial";
+				if (x < ctx.canvas.width/2) { 
+					ctx.textAlign="left";
+					ctx.fillText(cities[i].name, x+30, y);
+				}
+				else {
+					ctx.textAlign="right"
+					ctx.fillText(cities[i].name, x - 5, y-3);
+    			}
+			}
+
+			
+    	};
+
+		$('#load').click(function(){ 
+			nutella.net.publish('load_simulation',
+				{	sim: 0,
+					sim_start: {hour:10,minute:0},
+					sim_end: {hour:13,minute:0},
+					duration: 180
+				});
+		});
+
+		$('#start').click(function(){ 
+			nutella.net.publish('run_simulation',{});
+		});
+
+		$('#continue').click(function(){ 
+			nutella.net.publish('load_simulation',
+				{	sim: 0,
+					sim_start: {hour:13,minute:0},
+					sim_end: {hour:14,minute:0},
+					duration: 60
+				});
+				nutella.net.publish('run_simulation',{});
+		});
+
+	  });
+
+    });
+
+
+
+
+
+    </script>
+
+</head>
+<body>
+<!-- 	Simulation preview:<br>
+	Simulation: <input id='sim' type=text size=2><br>
+	Start time: Hour: <input id='sh' type=text size=2> Minute: <input id='sm' type=text size=2><br>
+	Start time: Hour: <input id='eh' type=text size=2> Minute: <input id='em' type=text size=2><br>
+	Duration (seconds) : <input id='duration' type=text size=3><br>
+ -->	<button id="load" onclick=>Reset to start</button><button id="start">Run first three minutes</button><button id="continue">Run final minute</button><br><br>
+	Clock: <span id='clocktime'></span><br>
+
+
+
+	<canvas id="floor" width="500" height="500" style="border:none;">
+		Your browser does not support the canvas element.
+	</canvas>
+</body>
+</html>

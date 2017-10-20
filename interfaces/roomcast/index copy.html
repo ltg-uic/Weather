@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<!-- <meta http-equiv="Content-Security-Policy" content="default-src *; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: 'unsafe-inline'; connect-src * 'unsafe-inline'; frame-src *;">
+ -->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="roomCast">
+  <title>roomcast</title>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script src="nutella_lib.js" type="text/javascript"></script>
+  <style>
+
+iframe { 
+border: none; 
+}
+body {
+    overflow:hidden ;
+}
+
+.blankpage {
+  background: orange;
+}
+p {
+    display: block;
+    margin-top: 0;
+    margin-bottom: 3px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#tabs .ui-tabs-active {
+  background: orange;
+  border-style: none;
+}
+
+    .ui-tabs .ui-tabs-tab
+    {
+      background: lightyellow;       /* color of the little rim outide the tabs */
+      cursor: pointer;
+
+    }
+
+    .ui-tabs
+    {
+      background: brown; /* color of the little rim outide the iframe */
+      border: none;
+    }
+
+    .ui-tabs .ui-tabs-nav
+    {
+    background: brown; /* this is the background color of the tabs bar */
+    border: none;
+    }
+
+    .ui-tabs .ui-tabs-panel 
+    {
+    background: orange; /* this is the background color of all the iframes */
+    }
+
+
+  </style>
+
+<script type="text/javascript">
+
+  // var p = document.getElementById("tabs").parentNode;
+  // var elmNewContent = document.createElement('<div id="tabs2"><ul id="resources2"></ul></div>');
+  // p.appendChild(elmNewContent);
+//   var elmDeleted = document.getElementById("tabs");
+//   elmDeleted.parentNode.removeChild(elmDeleted);
+
+
+//   var elmNewContent = document.createElement('<div id="tabs"><ul id="resources"></ul></div>');
+//   elmNewContent.appendChild(document.createTextNode('Replaced!'));
+//   var elmExtra = document.getElementById('extra');
+//   elmExtra.parentNode.replaceChild(elmNewContent, elmExtra);
+
+// var p = $(document).data("initialWizard", $("#tabs").clone(true));
+// console.log(p); alert(initialWizard);
+
+// function zap () {
+//   $(document).data("initialWizard").replaceAll("#tabs");
+// }
+    
+
+var portals,instances,activities,resources,design,activity,unitname;
+var portal, instance;
+var query_parameters, nutella;
+var h, bottomOfHeader,bottomOfVisibleWindow;
+var currentTab;
+var r = [];
+
+  // initialize nutella 
+
+  query_parameters = NUTELLA.parseURLParameters();
+  nutella = NUTELLA.init(query_parameters.broker, query_parameters.app_id, query_parameters.run_id, NUTELLA.parseComponentId());
+
+$(function() {
+
+  // var p = document.getElementById("tabs").parentNode;
+  // var elmNewContent = document.createElement('<div id="tabs2"><ul id="resources2"></ul></div>');
+  // p.appendChild(elmNewContent);
+
+
+  // set up the window
+
+  bottomOfHeader = 135; //hard-wired hack
+  bottomOfVisibleWindow = $(window).height(); 
+  h = bottomOfVisibleWindow - bottomOfHeader; 
+  $( window ).resize(function() {
+    bottomOfVisibleWindow = $(window).height(); 
+    h = bottomOfVisibleWindow - bottomOfHeader;
+    $("iframe").attr("height",h);
+  });
+
+
+  //grab all the configuration data
+  nutella.net.request('get_portals',{},function(message,from){ 
+    portals = message;
+    nutella.net.request('get_instances',{},function(message,from){
+      instances = message; console.log(instances);
+      nutella.net.request('get_activities',{},function(message,from){
+        activities = message;
+        nutella.net.request('get_resources',{},function(message,from){
+          resources = message;
+          nutella.net.request('get_design',{},function(message,from){
+            design = message;
+            nutella.net.request('get_activity',{},function(message,from){
+              activity = message; 
+              nutella.net.request('get_unitname',{},function(message,from){
+                unitname = message; 
+                // default to 'designer' (portalID 1)
+
+                var portalID = 1;
+                var instanceID = 1;
+
+                // substitute with query parameters if available
+
+                if (query_parameters.hasOwnProperty('portal') &&
+                    query_parameters.hasOwnProperty('instance')) { 
+                      portalID = query_parameters.portal; 
+                      instanceID = query_parameters.instance;
+                };
+
+                // find the portal object
+
+                var temp1 = portals.portalList.filter(function(item){
+                  return (item.ID == portalID);
+                })[0];
+                portal = {ID: temp1.ID, name: temp1.name};
+                console.log(portal);
+
+                // find the instance object within that portal
+
+                var temp2 = instances.data.filter(function(item){
+                  return (item.portalID == portalID);
+                })[0].instanceList.filter(function(item){
+                  return (item.ID == instanceID);
+                })[0];
+                instance = {ID: temp2.ID, name: temp2.name};
+                console.log(instance);
+                // build the page
+
+                build_page();
+
+
+
+                nutella.net.subscribe('unitname_set', function(message, from){
+                  if (portal.ID != 1) {
+                    unitname = message;
+                    document.getElementById('unitName').innerHTML = unitname.name;
+                  };
+                });
+
+                nutella.net.subscribe('activity_set', function(message, from){
+                  if (portal.ID != 1) {
+                    activity = message;
+                    build_page();
+                  };
+                });
+
+                nutella.net.subscribe('portals_set', function(message, from){
+                  if (portal.ID != 1) {
+                    portals = message;
+                    build_page();
+                  };
+                });
+
+
+                nutella.net.subscribe('instances_set', function(message, from){
+                  if (portal.ID != 1) {
+                    instances = message;
+                    build_page();
+                  };
+                });
+
+                nutella.net.subscribe('activities_set', function(message, from){
+                  if (portal.ID != 1) {
+                    activities = message;
+                    build_page();
+                  };
+                });
+
+                nutella.net.subscribe('resources_set', function(message, from){
+                  if (portal.ID != 1) {
+                    resources = message;
+                    build_page();
+                  };
+                });
+
+                nutella.net.subscribe('design_set', function(message, from){
+                  if (portal.ID != 1) {
+                    design = message;
+                    build_page();
+                  };
+                });
+
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+function build_page() {
+
+  // var currentTab = $('#tabs >ul >li').length == 0 ? -1 : $( "#tabs" ).tabs( "option", "active" );
+
+
+
+
+  currentTab = $('#tabs >ul >li').length == 0 ? -1 : $( "#tabs" ).tabs( "option", "active" );
+
+
+  $('#tabs').remove();
+  $("body").append('<div id="tabs"><ul id="resources"></ul></div>');
+
+
+
+  build_header_bar();
+  build_tab_bar();
+
+}
+
+function build_header_bar() {
+// this doesn't work. don't know why.  $('#unitName').innerHTML = unitname.name;
+  document.getElementById('unitName').innerHTML = unitname.name.replace(/%20/g, " ");
+  document.getElementById('portalName').innerHTML = portal.name.replace(/%20/g, " ");
+  document.getElementById('instanceName').innerHTML = instance.name.replace(/%20/g, " ");
+  document.getElementById('activityName').innerHTML = activity.name.replace(/%20/g, " ");
+}
+
+function build_tab_bar() {
+
+  // find resourceID of currentTab
+
+
+  var currentTabResource = (r.length == 0) ? -1 : r[currentTab]; 
+  var newTabIndex = 0;
+
+  r = design.data.filter(function (item) {
+    return ((item.activityID == activity.ID || item.activityID == 0) & item.portalID == portal.ID);
+    }).map(function(item){return (item.resourceID)});
+
+  
+  if (portal.ID == 1) r.push(100);
+  if (portal.ID == 2) r.push(101);
+  if (portal.ID == 3) r.push(102);
+  if (portal.ID == 4) r.push(103);
+  if (portal.ID == 10) r.push(104);
+  if (portal.ID == 20) r.push(105);
+  if (portal.ID == 21) r.push(106);
+  if (portal.ID > 21) r.push(108);
+
+
+  var t;
+  for (var i=0; i<r.length; i++) {
+    if (currentTabResource == r[i]) newTabIndex = i;
+    t = resources.resourceList.filter(function(item){
+      return (item.ID == r[i]);
+    })[0];
+
+
+//if (t.URL.substring(0,4) == "java") URL = ""; //legacy
+
+//  construct a URL if the resource is a nutella interface module
+    var URL = t.link; 
+    if ((t.link != '') && (t.link.substring(0,4) != "http")) { 
+        var s = 'http://';
+        s += window.location.host + '/';
+        s += query_parameters.app_id + '/';
+        s += query_parameters.run_id + '/';
+        s += 'runs/';
+        s += t.link + '/';
+        s += 'index.html' + '?';
+        s += 'broker=' + query_parameters.broker + '&';
+        s += 'app_id=' + query_parameters.app_id + '&';
+        s += 'run_id=' + query_parameters.run_id ;
+        s += t.query;
+        URL = s; 
+    };
+
+
+//  build the tab for this resource
+
+    $('#resources').append(
+      $('<li><a href="#tabs-' + i + '">' + t.name + '</a></li>'));
+
+//  build the iframe for this resource
+
+    $('#tabs').append(
+      $('<div id="tabs-' + i + '"><iframe  sandbox="allow-same-origin allow-scripts allow-popups allow-forms" src="' + URL + '" width=100% height=' + h + '></iframe></div>'));
+
+  }; // end of for loop over resources
+
+  // display the tabs and make them sortable
+
+  $( "#tabs" ).tabs();
+  $('.ui-tabs-nav').sortable();
+
+  // reselect prior tab if this is the designer portal
+
+  // if (portal.ID == 1) 
+    $('#tabs').tabs({active:newTabIndex});
+
+
+
+
+
+}
+
+function set_activity() {
+  nutella.net.publish('set_activity', activity);
+}
+ 
+function update_unitname(name){
+  unitname.name = name;
+  document.getElementById('unitName').innerHTML = name;
+  nutella.net.publish('set_unitname',unitname);
+}
+
+function update_portals() { 
+  nutella.net.publish('set_portals',{portals:portals,instances:instances});
+  build_page();
+}
+
+function update_instances() { console.log('roomcast called to update instances');
+  nutella.net.publish('set_instances',instances);
+  build_page();
+}
+
+function update_activities() {
+  nutella.net.publish('set_activities',activities);
+  build_page();
+}
+
+function update_resources() {
+  nutella.net.publish('set_resources',resources);
+  build_page();
+}
+
+function update_design() {
+  nutella.net.publish('set_design',design);
+}
+
+
+</script>
+</head>
+<body bgcolor=black>
+<div id="header">
+  <p id="titleSlot" style="color:white; text-align:center;font-size: 150%;font-family: sans-serif;">
+      <span style="color:orange; float:left;" id="unitName"></span>
+      <span id="portalName"></span>&nbsp•
+      <span id="instanceName"></span>&nbsp•  
+      <span id="activityName"></span>
+      <span style="color:orange; float:right;">roomCast</span>
+  </p>
+</div>
+<div id="tabs" >
+  <ul id="resources">
+  </ul>
+</div>
+</body>
+</html>

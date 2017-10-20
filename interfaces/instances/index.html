@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
+  <script src="nutella_lib.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.9.2/themes/cupertino/jquery-ui.css" />
+ 
+  <style type="text/css">
+
+    .inactiveLink {
+       pointer-events: none;
+       cursor: default;
+    }
+
+    body {
+    	background: orange;
+    }
+
+    td {
+      width:200px;
+    }
+
+
+    li {
+      font: 200 20px/1.5 Helvetica, Verdana, sans-serif;
+      border-bottom: 1px solid #ccc;
+      padding:5px 5px 5px 5px;
+      background-color:white;
+      list-style-type: none;
+    }
+    ul {
+       background-color:white;
+   }
+/*    li:last-child {
+      border: none;
+    }
+*/
+    li  a {
+      text-decoration: none;
+      color: white;
+
+      -webkit-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -moz-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -o-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -ms-transition: font-size 0.3s ease, background-color 0.3s ease;
+      transition: font-size 0.3s ease, background-color 0.3s ease;
+      /*display: block;*/
+    }
+
+    #mydiv {
+      text-align: center;
+
+    }
+
+    .ui-dialog-titlebar-close {
+    visibility: hidden;
+	}	
+
+    button {
+      font-size: 20px;
+    }
+
+    li  a:hover {
+      font-size: 25px;
+      /*background: white;*/
+    }
+
+    #portals {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #instances {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #portals .sort-handle {
+      display: none;
+    }
+ 
+    #portals .ui-selected .sort-handle
+     {
+      display: inline;
+      padding: 0 0.5em;
+      cursor: pointer;
+    }
+
+    #activities {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #activities .sort-handle {
+      display: none;
+    }
+ 
+    #activities .ui-selected .sort-handle
+     {
+      display: none;
+    }
+
+    #resources {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+
+    #resources li a
+    {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+
+    #resources li a.toggleList {
+      font-weight: bold;
+    }
+ 
+    #resources .sort-handle {
+      display: none;
+    }
+ 
+    #resources .ui-selected
+     {
+      font-weight: bold;
+/*      display: inline;
+      padding: 0 0.5em;
+      cursor: pointer;
+*/    }
+
+    .header {
+      font-size:25px; 
+      font-family:Helvetica;
+    }
+
+    li a.ui-selected {
+      background-color: white;
+      color: black;
+      font-weight: bold;
+      background-image: none;
+    }
+
+    li.ui-selected {
+      background-color: white;
+      color: black;
+      font-weight: bold;
+      background-image: none;
+    }
+    li.ui-selecting {
+      background-color: white;
+      color: red;
+      background-image: none;
+    }
+ 
+  </style>
+  <script>
+    var query_parameters = NUTELLA.parseURLParameters();
+    var nutella = NUTELLA.init(query_parameters.broker, query_parameters.app_id, query_parameters.run_id, NUTELLA.parseComponentId());
+
+    var tentativePortalID = -1;
+    var tentativePortalName;
+    var tentativeInstanceID;
+    var tentativeInstanceName;
+    var instanceIndex;
+    var instanceList;
+
+    $(function() {
+
+    	// build the portals menu
+    	function build_portals_list() {
+    		$('#portals').empty();
+	    	for (var i=0; i<top.portals.portalList.length; i++) {
+	    		var item = top.portals.portalList[i];
+	    		if (item.ID >= 10) { // cannot change instances of administrators
+		    	    var li = '<li class="ui-widget-content" value=' + item.ID + ' name="' + item.name + '"><a href="#">' + item.name + '</a></li>';
+				    $('#portals').append(li);
+				}
+	    	}
+	    }
+
+	    build_portals_list();
+
+	    // {"topID":2,"portalList":[{"ID":1,"name":"designer"},{"ID":2,"name":"other"}]}
+	    // {"data":[{"portalID":1,"topID":2,"instanceList":[{"ID":1,"name":"designer1"},{"ID":2,"name":"designer2"}]},{"portalID":2,"topID":2,"instanceList":[{"ID":1,"name":"other1"},{"ID":2,"name":"other2"}]}]}
+
+    	// if a portal is selected, highlight it
+
+  		$( "#portals li a" ).on( "click", function( event, ui ) { 
+  			$( "#portals li" ).removeClass('ui-selected'); 
+  			$( "#portals li a" ).removeClass('ui-selected');
+  			var p = event.currentTarget;
+  			tentativePortalName = p.innerHTML;
+  			p = $(p);
+  			p.addClass('ui-selected');
+  			tentativePortalID = p.parent()[0].value;
+
+  			$('#instances').empty();
+
+	        instanceList = top.instances.data.filter(function(item,index){
+	        	if (item.portalID == tentativePortalID) instanceIndex = index;
+	          return(item.portalID == tentativePortalID);
+	        })[0].instanceList;
+
+	        // rebuild the instances menu
+
+	        for (var i=0; i<instanceList.length; i++) {
+	          var item = instanceList[i];
+	          var li = '<li class="ui-widget-content" value=' + item.ID + ' name="' + item.name + '"><a href="#">' + item.name + '</a></li>';
+	        	$('#instances').append(li);
+	        }
+
+	        $( "#instances li a" ).unbind( "click");
+
+	        $( "#instances li a" ).on( "click", function( event, ui ) { 
+	          $( "#instances li" ).removeClass('ui-selected'); 
+	          $( "#instances li a" ).removeClass('ui-selected');
+	          var p = event.currentTarget;
+	          tentativeInstanceName = p.innerHTML;
+	          p = $(p);
+	          p.addClass('ui-selected');
+	          tentativeInstanceID = p.parent()[0].value;
+
+	        });        
+
+        });
+
+    	$('#delete').on("click", function (event, ui){
+    		if (instanceList.length == 1) {
+    			alert("You cannot delete the only instance for a portal");
+    			return;
+    		}
+    		for (var i=0; i<instanceList.length; i++)
+    			if (instanceList[i].ID == tentativeInstanceID){
+    				instanceList.splice(i,1);
+    				tentativeInstanceID = -1;
+    				top.instances.data[instanceIndex].instanceList = instanceList;
+    				top.update_instances();
+    				return;
+    			}
+    		alert ('You must select an instance first, then click Delete')
+    	});
+
+    	$("#renameDialog").dialog({
+    		autoOpen : false, modal : true, show : "blind", hide : "blind"
+  		});
+
+    	$('#rename').on("click", function (event, ui){
+    		if (tentativeInstanceID == -1) {
+    			alert ('You must select an instance first, then click Rename');
+    			return;
+    		}
+    		document.getElementById('revisedname').value = tentativeInstanceName;
+    		$("#renameDialog").dialog("open");
+    		document.getElementById('revisedname').select();
+    		// return false;
+    	});
+
+    	$('#cancelRename').on("click", function(){
+    		document.getElementById('revisedname').value = '';
+    		$("#renameDialog").dialog("close");
+    	})
+
+    	$('#saveRename').on("click", function(){ 
+    		$("#renameDialog").dialog("close");
+    		for (var i=0; i<instanceList.length; i++)
+    			if (instanceList[i].ID == tentativeInstanceID){
+    				instanceList[i].name = document.getElementById('revisedname').value;
+    				tentativeInstanceID = -1;
+    				top.instances.data[instanceIndex].instanceList = instanceList;
+    				top.update_instances();
+    				return;
+    			};
+    	});
+
+
+    	$("#newnameDialog").dialog({
+    		autoOpen : false, modal : true, show : "blind", hide : "blind"
+  		});
+
+    	$('#new').on("click", function (event, ui){
+    		document.getElementById('newname').value = "New portal";
+    		$("#newnameDialog").dialog("open");
+    		document.getElementById('newname').select();
+    		// return false;
+    	});
+
+    	$('#cancelNew').on("click", function(){
+    		document.getElementById('newname').value = '';
+    		$("#newnameDialog").dialog("close");
+    	})
+
+
+	    // {"topID":2,"portalList":[{"ID":1,"name":"designer"},{"ID":2,"name":"other"}]}
+	    // {"data":[{"portalID":1,"topID":2,"instanceList":[{"ID":1,"name":"designer1"},{"ID":2,"name":"designer2"}]},{"portalID":2,"topID":2,"instanceList":[{"ID":1,"name":"other1"},{"ID":2,"name":"other2"}]}]}
+
+    	$('#saveNew').on("click", function(){
+    		$("#newnameDialog").dialog("close");
+
+    		top.instances.data[instanceIndex].topID++;
+    		instanceList.push({ID:top.instances.data[instanceIndex].topID,name:document.getElementById('newname').value});
+    		top.instances.data[instanceIndex].instanceList = instanceList;
+    		top.update_instances();
+    	});
+
+	});
+
+</script>
+
+</head>
+<body>
+  <table>
+    <tr>
+      <td valign=top align=middle>
+        <span class="header"  id="open">portal</span><br>
+        <ul id="portals" class="list"></ul>
+      </td>
+      <td valign=top align=middle>
+         	<span class="header"  id="open">instance</span><br>
+        	<ul id="instances" class="list"></ul>
+	        <button id="new">New instance</button><br>
+	        <button id="delete">Delete instance</button><br>
+	        <button id="rename">Rename instance</button><br>
+      </td>
+
+   </tr>
+
+  </table>
+<div id="renameDialog" title="Rename the instance">
+  <input type=text id="revisedname"><br>
+  <button id="cancelRename">Cancel</button>
+  <button id="saveRename">Save</button>
+</div>
+<div id="newnameDialog" title="New instance">
+  <input type=text id="newname"><br>
+  <button id="cancelNew">Cancel</button>
+  <button id="saveNew">Save</button>
+</div>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
+  <script src="nutella_lib.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.9.2/themes/cupertino/jquery-ui.css" />
+ 
+  <style type="text/css">
+
+    .inactiveLink {
+       pointer-events: none;
+       cursor: default;
+    }
+
+    body {
+    	background: orange;
+    }
+
+    td {
+      width:200px;
+    }
+
+
+    li {
+      font: 200 20px/1.5 Helvetica, Verdana, sans-serif;
+      border-bottom: 1px solid #ccc;
+      padding:5px 5px 5px 5px;
+      background-color:white;
+      list-style-type: none;
+    }
+    ul {
+       background-color:white;
+   }
+/*    li:last-child {
+      border: none;
+    }
+*/
+    li  a {
+      text-decoration: none;
+      color: white;
+
+      -webkit-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -moz-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -o-transition: font-size 0.3s ease, background-color 0.3s ease;
+      -ms-transition: font-size 0.3s ease, background-color 0.3s ease;
+      transition: font-size 0.3s ease, background-color 0.3s ease;
+      /*display: block;*/
+    }
+
+    #mydiv {
+      text-align: center;
+
+    }
+
+    .ui-dialog-titlebar-close {
+    visibility: hidden;
+	}	
+
+    button {
+      font-size: 20px;
+    }
+
+    li  a:hover {
+      font-size: 25px;
+      /*background: white;*/
+    }
+
+    #portals {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #instances {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #portals .sort-handle {
+      display: none;
+    }
+ 
+    #portals .ui-selected .sort-handle
+     {
+      display: inline;
+      padding: 0 0.5em;
+      cursor: pointer;
+    }
+
+    #activities {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+ 
+    #activities .sort-handle {
+      display: none;
+    }
+ 
+    #activities .ui-selected .sort-handle
+     {
+      display: none;
+    }
+
+    #resources {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+
+    #resources li a
+    {
+      /*list-style: none;*/
+      padding-left: 0;
+    }
+
+    #resources li a.toggleList {
+      font-weight: bold;
+    }
+ 
+    #resources .sort-handle {
+      display: none;
+    }
+ 
+    #resources .ui-selected
+     {
+      font-weight: bold;
+/*      display: inline;
+      padding: 0 0.5em;
+      cursor: pointer;
+*/    }
+
+    .header {
+      font-size:25px; 
+      font-family:Helvetica;
+    }
+
+    li a.ui-selected {
+      background-color: white;
+      color: black;
+      font-weight: bold;
+      background-image: none;
+    }
+
+    li.ui-selected {
+      background-color: white;
+      color: black;
+      font-weight: bold;
+      background-image: none;
+    }
+    li.ui-selecting {
+      background-color: white;
+      color: red;
+      background-image: none;
+    }
+ 
+  </style>
+  <script>
+    var query_parameters = NUTELLA.parseURLParameters();
+    var nutella = NUTELLA.init(query_parameters.broker, query_parameters.app_id, query_parameters.run_id, NUTELLA.parseComponentId());
+
+    var tentativePortalID = -1;
+    var tentativePortalName;
+    var tentativeActivityID = -1
+    var tentativeActivityName;
+
+    $(function() {
+
+    	// build the portals menu
+    	function build_portals_list() {
+    		$('#portals').empty();
+	    	for (var i=0; i<top.portals.portalList.length; i++) {
+	    		var item = top.portals.portalList[i];
+	    		if (item.ID != 1) {
+		    	    var li = '<li class="ui-widget-content" value=' + item.ID + ' name="' + item.name + '"><a href="#">' + item.name + '</a></li>';
+				    $('#portals').append(li);
+				  };
+	    	};
+	    };
+
+	    build_portals_list();
+
+      $( "#portals li a" ).on( "click", function( event, ui ) { 
+        $( "#portals li" ).removeClass('ui-selected'); 
+        $( "#portals li a" ).removeClass('ui-selected');
+        var p = event.currentTarget;
+        tentativePortalName = p.innerHTML;
+        p = $(p);
+        p.addClass('ui-selected');
+        tentativePortalID = p.parent()[0].value;
+        if (tentativePortalID < 10) $('#activities').hide(); else $('#activities').show();
+        refresh_resources_list();
+      });
+
+
+      function build_activities_list() {
+        $('#activities').empty();
+        for (var i=0; i<top.activities.activityList.length; i++) {
+          var item = top.activities.activityList[i];
+          if (item.ID > 0) {
+              var li = '<li class="ui-widget-content" value=' + item.ID + ' name="' + item.name + '"><a href="#">' + item.name + '</a></li>';
+            $('#activities').append(li);
+          };
+        };
+      };
+
+      build_activities_list();
+
+      $( "#activities li a" ).on( "click", function( event, ui ) { 
+        $( "#activities li" ).removeClass('ui-selected'); 
+        $( "#activities li a" ).removeClass('ui-selected');
+        var p = event.currentTarget;
+        tentativeActivityName = p.innerHTML;
+        p = $(p);
+        p.addClass('ui-selected');
+        tentativeActivityID = p.parent()[0].value;
+        refresh_resources_list();
+      });
+
+
+      function build_resources_list() {
+        $('#resources').empty();
+        for (var i=0; i<top.resources.resourceList.length; i++) {
+          var item = top.resources.resourceList[i];
+          if (item.ID >= 200) {
+            var li = '<li class="ui-widget-content" value=' + item.ID + ' name="' + item.name + '"><a href="#">' + item.name + '</a></li>';
+          };
+          $('#resources').append(li);
+        };
+      };
+
+      build_resources_list();
+
+      function refresh_resources_list() {
+        $( "#resources li a" ).removeClass('ui-selected');
+        var resources = top.design.data.filter(function(item){
+              return (item.portalID == tentativePortalID && (item.activityID == tentativeActivityID || item.activityID == 0));
+            }); 
+        for (var i=0; i<$('#resources li').length; i++) { 
+          var resource = document.getElementById('resources').getElementsByTagName('li')[i];
+          var resourceID = resource.value; 
+          var match = resources.filter(function(item){
+            return (item.resourceID == resourceID);
+          }).length;
+          if (match > 0) { resource.children[0].className += "ui-selected";}
+        };
+      };
+
+      $( "#resources li a" ).on( "click", function( event, ui ) { 
+        // $( "#resources li" ).removeClass('ui-selected'); 
+        // $( "#resources li a" ).removeClass('ui-selected');
+        var p = event.currentTarget;
+        tentativeResourceName = p.innerHTML;
+        p = $(p);
+        tentativeResourceID = p.parent()[0].value;
+        var tActivityID = tentativeActivityID;
+        if (tentativePortalID < 10) tActivityID = 0;
+        if (tentativePortalID != -1 && tActivityID != -1) {
+          if (p.hasClass('ui-selected')) {
+            p.removeClass('ui-selected');
+            var temp = top.design.data.filter(function(item){
+              return (item.portalID != tentativePortalID || item.activityID != tActivityID || item.resourceID != tentativeResourceID)
+            });
+            top.design.data = temp;
+          }
+          else {
+            p.addClass('ui-selected');
+            top.design.data.push({portalID: tentativePortalID, activityID: tActivityID, resourceID: tentativeResourceID});
+          };
+        };
+	     });
+
+       $( "#distribute" ).on( "click", function( event, ui ) {
+          top.update_design();
+       });
+
+    });
+
+</script>
+
+</head>
+<body>
+  <table>
+    <tr>
+      <td valign=top align=middle>
+        <span class="header"  id="open">portal</span><br>
+        <ul id="portals" class="list"></ul>
+      </td>
+      <td valign=top align=middle>
+        <span class="header"  id="open">activity</span><br>
+        <ul id="activities" class="list"></ul>
+      </td>
+      <td valign=top align=middle>
+        <span class="header"  id="open">resources</span><br>
+        <ul id="resources" class="list"></ul>
+      </td>
+       <td valign=top align=middle>
+        <span class="header"  id="open">action</span><br><br>
+        <button id="distribute">distribute</button>
+      </td>
+
+
+   </tr>
+  </table>
+</body>
+</html>
