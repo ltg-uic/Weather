@@ -17,6 +17,23 @@
 		body {
 	    	font-family: "Arial";
 		}
+		button {
+		  -webkit-border-radius: 6;
+		  -moz-border-radius: 6;
+		  border-radius: 6px;
+		  font-family: Arial;
+		  font-size: 18px;
+		  background: lightyellow;
+		  color: brown;
+		  padding: 5px 10px 5px 10px;
+		  text-decoration: none;
+		}
+
+		button:hover {
+		  background: brown;
+		  color: lightyellow;
+		  text-decoration: none;
+		}
 	</style>
 
 	<script type="text/javascript">
@@ -26,6 +43,8 @@
 
 	// Get an instance of nutella. 
 	var nutella = NUTELLA.init(query_parameters.broker, query_parameters.app_id, query_parameters.run_id, NUTELLA.parseComponentId());
+
+	var version = "control";
 
 	var room = [[]];
 	var maxX;
@@ -37,6 +56,10 @@
 		var canvas = document.getElementById("floor"); 
 		var ctx = canvas.getContext("2d"); 
 		nutella.net.request("get_config", undefined, function(response) {
+		if (query_parameters.hasOwnProperty('version')) {
+			version = query_parameters.version;
+			$('#header').html('Quick view');
+		};
 
 
 
@@ -91,7 +114,7 @@
         		ctx.canvas.width = Math.floor(500 * (maxX / maxY));
         	}
         	ctx.fillStyle = "white";
-    		// ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    		ctx.fillRect(unitX,unitY,ctx.canvas.width,ctx.canvas.height);
 
     		// draw grid
 
@@ -131,7 +154,7 @@
 				for (var j=0; j<room[i].length; j++) {
 					ctx.strokeStyle = 'black';
 					if (room[i][j].t < 15) ctx.fillStyle = 'LightBlue';
-					else if (room[i][j].t < 25) ctx.fillStyle = 'Cornsilk';
+					else if (room[i][j].t < 25) ctx.fillStyle = 'Wheat';
 					else ctx.fillStyle = 'Tomato';							
 					ctx.beginPath();
 					ctx.moveTo((i+1) * unitX+1, (j+1) * unitY+1);
@@ -169,11 +192,13 @@
     	};
 
 		$('#load').click(function(){ 
+			var duration = 180;
+			if (version == 'quickview') duration = 15;
 			nutella.net.publish('load_simulation',
 				{	sim: 0,
 					sim_start: {hour:10,minute:0},
 					sim_end: {hour:13,minute:0},
-					duration: 180
+					duration: duration
 				});
 		});
 
@@ -182,11 +207,13 @@
 		});
 
 		$('#continue').click(function(){ 
+			duration = 60;
+			if (version == 'quickview') duration = 5;
 			nutella.net.publish('load_simulation',
 				{	sim: 0,
 					sim_start: {hour:13,minute:0},
 					sim_end: {hour:14,minute:0},
-					duration: 60
+					duration: duration
 				});
 				nutella.net.publish('run_simulation',{});
 		});
@@ -202,19 +229,28 @@
     </script>
 
 </head>
+
 <body>
-<!-- 	Simulation preview:<br>
-	Simulation: <input id='sim' type=text size=2><br>
-	Start time: Hour: <input id='sh' type=text size=2> Minute: <input id='sm' type=text size=2><br>
-	Start time: Hour: <input id='eh' type=text size=2> Minute: <input id='em' type=text size=2><br>
-	Duration (seconds) : <input id='duration' type=text size=3><br>
- -->	<button id="load" onclick=>Reset to start</button><button id="start">Run first three minutes</button><button id="continue">Run final minute</button><br><br>
-	Clock: <span id='clocktime'></span><br>
+	<table>
+		<tr>
+			<td align=center valign=top>
+				<canvas id="floor" width="500" height="500" style="border:none;">
+					Your browser does not support the canvas element.
+				</canvas><br>
+					&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<span style="font-size:300%;" id='clocktime'></span>
+			</td>
+			<td width=50>
+			</td>
+			<td valign=top align=center>
+				<br><span id="header" style="font-size:200%;">Simulation</span><br><br>
+				<button id="load">Reset to beginning</button><br>
+				<button id="start">Run mapping activity</button><br>
+				<button id="continue">Run prediction activity</button><br>
+			</td>
+		</tr>
+	</table>
 
-
-
-	<canvas id="floor" width="500" height="500" style="border:none;">
-		Your browser does not support the canvas element.
-	</canvas>
 </body>
+
+
 </html>

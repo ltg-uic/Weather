@@ -17,6 +17,23 @@
 		body {
 	    	font-family: "Arial";
 		}
+		button {
+		  -webkit-border-radius: 6;
+		  -moz-border-radius: 6;
+		  border-radius: 6px;
+		  font-family: Arial;
+		  font-size: 18px;
+		  background: lightyellow;
+		  color: brown;
+		  padding: 5px 10px 5px 10px;
+		  text-decoration: none;
+		}
+
+		button:hover {
+		  background: brown;
+		  color: lightyellow;
+		  text-decoration: none;
+		}
 	</style>
 
 	<script type="text/javascript">
@@ -90,7 +107,7 @@
 	        	}
 	        	ctx.fillStyle = "white";
 
-	    		// ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+	    		ctx.fillRect(unitX,unitY,ctx.canvas.width,ctx.canvas.height);
 
 	    		// draw grid
 
@@ -127,13 +144,13 @@
 
 				for (var i=0; i<cities.length; i++) {
 					if (submissions[predictions[i]].temp < 15) ctx.fillStyle = 'LightBlue';
-					else if (submissions[predictions[i]].temp < 25) ctx.fillStyle = 'Cornsilk';
+					else if (submissions[predictions[i]].temp < 25) ctx.fillStyle = 'Wheat';
 					else ctx.fillStyle = 'Tomato';							
 					ctx.beginPath();
-					ctx.moveTo(cities[i].x * unitX, cities[i].y * unitY);
-					ctx.lineTo((cities[i].x+1) * unitX, cities[i].y * unitY);
-					ctx.lineTo((cities[i].x+1) * unitX, (cities[i].y+1) * unitY);
-					ctx.lineTo(cities[i].x * unitX, (cities[i].y+1) * unitY);
+					ctx.moveTo(cities[i].x * unitX+1, cities[i].y * unitY+1);
+					ctx.lineTo((cities[i].x+1) * unitX-1, cities[i].y * unitY+1);
+					ctx.lineTo((cities[i].x+1) * unitX-1, (cities[i].y+1) * unitY-1);
+					ctx.lineTo(cities[i].x * unitX+1, (cities[i].y+1) * unitY-1);
 					// ctx.moveTo(indexX * unitX, indexY * unitY);
 					ctx.fill();
 					// if (submissions[predictions[i]].precip == 'rain'){
@@ -271,9 +288,22 @@
 
 </head>
 <body>
-	<button id="predict">Predict</button><br><br>
-	<canvas id="floor" width="500" height="500" style="border:none;">
-		Your browser does not support the canvas element.
-	</canvas>
+	<table>
+		<tr>
+			<td align=center valign=top>
+				<canvas id="floor" width="500" height="500" style="border:none;">
+					Your browser does not support the canvas element.
+				</canvas><br>
+<!-- 					&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<span style="font-size:300%;" id='clocktime'></span>
+ -->			</td>
+			<td width=50>
+			</td>
+			<td valign=top align=center>
+				<br><span style="font-size:200%;">Predictions</span><br><br>
+				<button id="predict">Submit predictions</button><br>
+			</td>
+		</tr>
+	</table>
+
 </body>
 </html>

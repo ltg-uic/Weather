@@ -17,6 +17,23 @@
 		body {
 	    	font-family: "Arial";
 		}
+		button {
+		  -webkit-border-radius: 6;
+		  -moz-border-radius: 6;
+		  border-radius: 6px;
+		  font-family: Arial;
+		  color: white;
+		  font-size: 18px;
+		  background: brown;
+		  padding: 5px 10px 5px 10px;
+		  text-decoration: none;
+		}
+
+		button:hover {
+		  background: white;
+		  color: brown;
+		  text-decoration: none;
+		}
 	</style>
 
 	<script type="text/javascript">
@@ -32,11 +49,19 @@
 	var maxY;
 	var unitX;
 	var unitY;
+	var names = [];
 
     $(function() {
 		var canvas = document.getElementById("floor");
 		var ctx = canvas.getContext("2d"); 
 	  nutella.net.request("get_config", undefined, function(response) {
+	  	nutella.net.request("get_simulation_names",{},function(sim_names){
+	  		names = sim_names; console.log(names);
+	  		for (i=0; i<names.length; i++){
+	  			var option = '<option value=' + i + '>' + names[i] + '</option>';
+	  		};
+	  		$('#sim').append(option);
+
 
 
 
@@ -48,6 +73,7 @@
 			var indexX = 0;
 			var indexY = 0;
 			var cities = response.cities;
+
 			redrawRoom();
 
 		// redrawRoom();
@@ -94,7 +120,7 @@
         		ctx.canvas.width = Math.floor(500 * (maxX / maxY));
         	}
         	ctx.fillStyle = "white";
-    		// ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    		ctx.fillRect(unitX,unitY,ctx.canvas.width,ctx.canvas.height);
 
     		// draw grid
 
@@ -134,7 +160,7 @@
 				for (var j=0; j<room[i].length; j++) {
 					ctx.strokeStyle = 'black';
 					if (room[i][j].t < 15) ctx.fillStyle = 'LightBlue';
-					else if (room[i][j].t < 25) ctx.fillStyle = 'Cornsilk';
+					else if (room[i][j].t < 25) ctx.fillStyle = 'Wheat';
 					else ctx.fillStyle = 'Tomato';							
 					ctx.beginPath();
 					ctx.moveTo((i+1) * unitX+1, (j+1) * unitY+1);
@@ -172,7 +198,7 @@
 
 		$('#load').click(function(){ 
 			nutella.net.publish('load_simulation',
-				{	sim: $('#sim').val(),
+				{	sim: $('#sim option:selected').val(),
 					sim_start: {hour:$('#sh').val(),minute:$('#sm').val()},
 					sim_end: {hour:$('#eh').val(),minute:$('#em').val()},
 					duration: $('#duration').val()
@@ -183,6 +209,8 @@
 			nutella.net.publish('run_simulation',{});
 		});
 	  });
+	  	});
+
     });
 
 
@@ -193,19 +221,35 @@
 
 </head>
 <body>
-	For off-line viewing outside of classtime...<br><br>
-	Simulation preview:<br>
-	Simulation: <input id='sim' type=text size=2><br>
-	Start time: Hour: <input id='sh' type=text size=2> Minute: <input id='sm' type=text size=2><br>
-	Start time: Hour: <input id='eh' type=text size=2> Minute: <input id='em' type=text size=2><br>
-	Duration (seconds) : <input id='duration' type=text size=3><br>
-	<button id="load" onclick=>Load simulation</button><button id="start">Start simulation</button><br><br>
-	Clock: <span id='clocktime'></span><br>
+	<table>
+		<tr>
+			<td align=center valign=top>
+				<canvas id="floor" width="500" height="500" style="border:none;">
+					Your browser does not support the canvas element.
+				</canvas><br>
+					&nbsp&nbsp&nbsp<span style="font-size:300%;" id='clocktime'></span>
+			</td>
+			<td width=50>
+			</td>
+			<td valign=top>
+				<br><br>
+				For off-line viewing outside of classtime...<br><br>
+				Simulation preview:<br>
+				Simulation: <select id='sim'>
+							</select><br>
+				Start time: Hour: <input id='sh' type=text size=2> Minute: <input id='sm' type=text size=2><br>
+				Start time: Hour: <input id='eh' type=text size=2> Minute: <input id='em' type=text size=2><br>
+				Duration (seconds) : <input id='duration' type=text size=3><br>
+				<button id="load" >Load simulation</button><br><button id="start">Start simulation</button>
+			</td>
+		</tr>
+	</table>
 
 
 
-	<canvas id="floor" width="500" height="500" style="border:none;">
-		Your browser does not support the canvas element.
-	</canvas>
+
+
+
+
 </body>
 </html>

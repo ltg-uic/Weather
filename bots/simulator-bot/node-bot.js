@@ -106,8 +106,12 @@ function weather(s,step) {
 
 
 nutella.net.subscribe('load_simulation',function(message){
-    if (in_simulation) return;
-    console.log(message);
+
+    if (in_simulation) {
+        clearInterval(clockTicker);
+        clearInterval(simulationTicker);
+        in_simulation = false;
+    };
     current_sim = message.sim; // which simulation are you running?
     var sim_start = message.sim_start;
     var sim_end = message.sim_end;
@@ -142,6 +146,13 @@ nutella.net.handle_requests('get_config', function (message, from){
     return ({X_max: s.maxX, Y_max: s.maxY, cities:s.cities});
 });
 
+nutella.net.handle_requests('get_simulation_names', function(message,from){
+    var names = simulations.map(function(item){
+        return item.name;
+    });
+    console.log(names);
+    return names;
+})
 
 function minute_timer() {
     clock_time++;

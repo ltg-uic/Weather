@@ -75,9 +75,9 @@
 
 		function buildHeaders(){
 			var row = '<tr align=center>';
-			row += '<td><b>' + 'Group' + '</b></td>';
+			row += '<td style="background-color:white;"><b>' + 'Group' + '</b></td>';
 			for (var i=0; i<cities.length; i++) {
-				row += '<td colspan=2><b>' + cities[i].name + '</b></td>';
+				row += '<td style="background-color:white;" colspan=2><b>' + cities[i].name + '</b></td>';
 			};
 			row += '</tr>';
 			$('#predictions').append(row);
@@ -85,18 +85,18 @@
 		}
 
 		nutella.net.subscribe('prediction', function (prediction){ 
-			var row = '<tr align=center>';
-			row += '<td>' + prediction.name + '</td>';
+			var row = '<tr align=center style="background-color:white;">';
+			row += '<td style="background-color:white;">' + prediction.name + '</td>';
 			for (var i=0; i<cities.length; i++){
 
 				var temp_img_src = 'medium.png';
 				if (prediction.data[i].temp < 15) temp_img_src = 'cold.png';
 				if (prediction.data[i].temp > 25) temp_img_src = 'warm.png';
-				row += '<td>' + '<img src="' + temp_img_src + '">' + '</td>';
+				row += '<td  style="background-color:white;">' + '<img src="' + temp_img_src + '">' + '</td>';
 
 				var precipChar = '🌧';
 				if (prediction.data[i].precip == 'clear') precipChar = '☀️';
-				row += '<td style="font-size: 200%;">' + precipChar + '</td>';
+				row += '<td "style="background-color:white; font-size: 200%;">' + precipChar + '</td>';
 			};
 			row += '</tr>';
 			for (var i=1; i<$('#predictions tr').length; i++) {
@@ -134,7 +134,7 @@
         		ctx.canvas.width = Math.floor(500 * (maxX / maxY));
         	}
         	ctx.fillStyle = "white";
-    		// ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    		ctx.fillRect(unitX,unitY,ctx.canvas.width,ctx.canvas.height);
 
     		// draw grid
 
@@ -174,7 +174,7 @@
 				for (var j=0; j<room[i].length; j++) {
 					ctx.strokeStyle = 'black';
 					if (room[i][j].t < 15) ctx.fillStyle = 'LightBlue';
-					else if (room[i][j].t < 25) ctx.fillStyle = 'Cornsilk';
+					else if (room[i][j].t < 25) ctx.fillStyle = 'Wheat';
 					else ctx.fillStyle = 'Tomato';							
 					ctx.beginPath();
 					ctx.moveTo((i+1) * unitX+1, (j+1) * unitY+1);
@@ -235,16 +235,16 @@
 <body>
 	<table>
 		<tr>
-			<td>
-				Clock: <span id='clocktime'></span><br>
+			<td valign=top align=center>
 				<canvas id="floor" width="500" height="500" style="border:none;">
 					Your browser does not support the canvas element.
-				</canvas>
+				</canvas><br>
+				&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<span style="font-size:300%;" id='clocktime'></span>
 			</td>
 			<td width=50></td>
-			<td valign=top>
-				<span style="font-size:200%">Predictions</span><br>
-				<table width=500 style="background-color:white" border id="predictions"><tr></tr>
+			<td valign=top align=center>
+				<br><span style="font-size:200%">Predictions</span><br><br>
+				<table width=550 border id="predictions"><tr></tr>
 				</table>
 
 			</td>
