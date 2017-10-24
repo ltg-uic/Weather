@@ -154,6 +154,11 @@ nutella.net.handle_requests('get_simulation_names', function(message,from){
     return names;
 })
 
+nutella.net.handle_requests('get_current_weather', function(message,from){
+    return weather(current_sim,simulation_step);
+})
+
+
 function minute_timer() {
     clock_time++;
     var h = Math.floor(clock_time/60);

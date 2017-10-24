@@ -82,7 +82,7 @@
 	        	}
 	        	ctx.fillStyle = "white";
 
-	    		// ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+	    		ctx.fillRect(unitX,unitY,ctx.canvas.width,ctx.canvas.height);
 
 	    		// draw grid
 
@@ -162,7 +162,8 @@
 	        	if (pendingX < 1 || pendingY < 1) return;
 	        	indexX = pendingX;
 	        	indexY = pendingY;
-	        	top.document.getElementById('weatherstation').contentWindow.changeCell(indexX,indexY);
+	        	if (top.document.getElementById('view')) top.document.getElementById('view').contentWindow.changeCell(indexX,indexY);
+	        	if (top.document.getElementById('weatherstation')) top.document.getElementById('weatherstation').contentWindow.changeCell(indexX,indexY);
 	        	redrawRoom();
 	        };
 
@@ -209,8 +210,10 @@
 
 </head>
 <body>
+	<table><tr><td>
 	<canvas id="floor" width="500" height="500" style="border:none;">
 		Your browser does not support the canvas element.
 	</canvas>
+</td></tr></table>
 </body>
 </html>

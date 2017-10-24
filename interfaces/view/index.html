@@ -32,12 +32,41 @@
 	var maxY;
 	var unitX;
 	var unitY;
+	var version='roomview';
+	var cellX = 0;
+	var cellY = 0;
+	var ctx;
+
+		function changeCell(x,y){
+			cellX=x; cellY=y;
+			ctx.fillStyle = 'White';
+			ctx.beginPath();
+			var i = cellX-1;
+			var j = cellY-1;
+			ctx.moveTo((i+1) * unitX+1, (j+1) * unitY+1);
+			ctx.lineTo((i+2) * unitX-1, (j+1) * unitY+1);
+			ctx.lineTo((i+2) * unitX-1, (j+2) * unitY-1);
+			ctx.lineTo((i+1) * unitX+1, (j+2) * unitY-1);
+			ctx.fill();
+			nutella.net.request("get_current_weather",{},function(map){
+				room = map;
+				redrawRoom();
+			})
+
+			// $('#coordinates').html(alphabet[cellX] + cellY);
+		}
+
 
     $(function() {
 		var canvas = document.getElementById("floor");
-		var ctx = canvas.getContext("2d"); 
+		ctx = canvas.getContext("2d"); 
 
 	  nutella.net.request("get_config", undefined, function(response) {
+		if (query_parameters.hasOwnProperty('version')) {
+			version = query_parameters.version;
+			$('#predictionTable').hide();
+			// $('#header').html('Quick view');
+		};
 
 
 
@@ -134,6 +163,7 @@
         		ctx.canvas.width = Math.floor(500 * (maxX / maxY));
         	}
         	ctx.fillStyle = "white";
+        	if (version == 'weatherstation') ctx.fillStyle = "DarkGrey";
     		ctx.fillRect(unitX,unitY,ctx.canvas.width,ctx.canvas.height);
 
     		// draw grid
@@ -172,6 +202,7 @@
 
 			for (var i=0; i<room.length; i++)
 				for (var j=0; j<room[i].length; j++) {
+					if ((cellX !=0 && cellY!= 0) && (i != (cellX-1) || j != (cellY-1) || version!="weatherstation"))continue;
 					ctx.strokeStyle = 'black';
 					if (room[i][j].t < 15) ctx.fillStyle = 'LightBlue';
 					else if (room[i][j].t < 25) ctx.fillStyle = 'Wheat';
@@ -242,7 +273,7 @@
 				&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<span style="font-size:300%;" id='clocktime'></span>
 			</td>
 			<td width=50></td>
-			<td valign=top align=center>
+			<td id="predictionTable" valign=top align=center>
 				<br><span style="font-size:200%">Predictions</span><br><br>
 				<table width=550 border id="predictions"><tr></tr>
 				</table>
