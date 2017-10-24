@@ -48,10 +48,10 @@
 			ctx.lineTo((i+2) * unitX-1, (j+2) * unitY-1);
 			ctx.lineTo((i+1) * unitX+1, (j+2) * unitY-1);
 			ctx.fill();
-			nutella.net.request("get_current_weather",{},function(map){
-				room = map;
-				redrawRoom();
-			})
+			// nutella.net.request("get_current_weather",{},function(map){
+			// 	room = map;
+			// 	redrawRoom();
+			// })
 
 			// $('#coordinates').html(alphabet[cellX] + cellY);
 		}
